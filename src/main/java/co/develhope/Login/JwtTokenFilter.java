@@ -11,6 +11,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -21,13 +23,17 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Component
 public class JwtTokenFilter extends OncePerRequestFilter {
     @Autowired
     private UserRepository userRepository;
+
+    private Collection<? extends GrantedAuthority> getAuthorities(User user){
+        if (user == null || !user.isActvive()) return List.of();
+        return Arrays.asList(user.getRoles().stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName())).toArray(SimpleGrantedAuthority[]::new));
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
@@ -35,8 +41,14 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         if (header == null || !header.startsWith("Bearer ")) {
             chain.doFilter(request, response);
         }
-        if (!(header == null)) {
-            final String token = header.split(" ")[1].trim();
+
+            final String token;
+            try {
+                token = header.split(" ")[1].trim();
+            }catch (JWTVerificationException ex) {
+                chain.doFilter(request, response);
+                return;
+            }
             DecodedJWT decoded = null;
             try {
                 JWTVerifier verifier = JWT.require(Algorithm.HMAC512(LoginService.JWT_SECRET)).build();
@@ -55,13 +67,13 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             user.setActvive(false);
             user.setPassword(null);
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails.get(), null, List.of());
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails.get(), null, getAuthorities(user));
             authentication.setDetails(
                     new WebAuthenticationDetailsSource().buildDetails(request)
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             chain.doFilter(request, response);
-        }
+
     }
 }

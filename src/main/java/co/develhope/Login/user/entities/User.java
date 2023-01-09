@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -31,4 +32,14 @@ public class User {
     @Column(length = 36)
     private String activationCode;
     private String passwordResetCode;
+
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinTable(name= "USER_ROLES",
+            joinColumns = {
+                @JoinColumn(name = "USER_ID")
+            },
+            inverseJoinColumns = {
+                @JoinColumn(name = "ROLE_ID")
+            })
+    private Set<Role> roles;
 }

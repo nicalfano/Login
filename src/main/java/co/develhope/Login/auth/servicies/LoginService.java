@@ -50,9 +50,12 @@ private PasswordEncoder passwordEncoder;
     }
     public static String getJWT(User user){
         Date expireAt = Timestamp.valueOf(LocalDateTime.now().plusDays(15));
+        String[] roles = user.getRoles().stream().map(role -> role.getName()).toArray(String[]::new);
         return JWT.create().withIssuer("LoginService")
                 .withIssuedAt(new java.util.Date())
-                .withExpiresAt(expireAt).withClaim("id",user.getId()).sign(Algorithm.HMAC512(JWT_SECRET));
+                .withExpiresAt(expireAt)
+                .withClaim("id",user.getId()).withClaim("roles", String.join(",",roles))
+                .sign(Algorithm.HMAC512(JWT_SECRET));
 
     }
 }
