@@ -30,8 +30,10 @@ public class SignUpService {
     private RoleRepository roleRepository;
     @Autowired
     private MailNotificationService mailNotificationService;
-
     public User signUp (SignUpDTO signUpDTO) throws Exception {
+        return this.signUp(signUpDTO,Roles.REGISTERED);
+    }
+    public User signUp (SignUpDTO signUpDTO, String role) throws Exception {
     User userFromDB = userRepository.findByEmail(signUpDTO.getEmail());
     if(userFromDB != null) throw new Exception("User already exists");
     User user = new User();
@@ -42,7 +44,7 @@ public class SignUpService {
     user.setActvive(false);
     user.setActivationCode(UUID.randomUUID().toString());
     Set<Role> roles = new HashSet<>();
-    Optional<Role> userRole = roleRepository.findByName(Roles.REGISTERED);
+    Optional<Role> userRole = roleRepository.findByName(role.toUpperCase());
     if(!userRole.isPresent()) throw new Exception("Cannot set role");
     roles.add(userRole.get());
     user.setRoles(roles);

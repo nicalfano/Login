@@ -25,7 +25,6 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeRequests().antMatchers("/auth/**").permitAll().and()
                 .authorizeRequests().antMatchers("/h2-console/**").permitAll()
-                .antMatchers("/admin/**").hasAnyRole("ROLE_ADMIN","ROLE_OWNER","ROLE_SUPER_ADMIN")
                 .anyRequest().authenticated();
         httpSecurity.csrf().disable();
         httpSecurity.headers().frameOptions().disable();
